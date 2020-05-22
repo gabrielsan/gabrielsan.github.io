@@ -1,30 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Doctor Page</title>
-</head>
+<title>Bottle Share</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-.myDiv {
-  border: 5px outset red;
-  background-color: lightblue;    
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+/* Style the header */
+.header {
+  background-color: #f1f1f1;
+  padding: 20px;
   text-align: center;
 }
+
+/* Style the top navigation bar */
+.topnav {
+  overflow: hidden;
+  background-color: #333;
+}
+
+/* Style the topnav links */
+.topnav a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change color on hover */
+.topnav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+/* Create three equal columns that floats next to each other */
+.column {
+  float: left;
+  width: 33.33%;
+  padding: 15px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Responsive layout - makes the three columns stack on top of each other instead of next to each other */
+@media screen and (max-width:600px) {
+  .column {
+    width: 100%;
+  }
+}
 </style>
+</head>
 <body>
+
+<div class="header">
+  <h1>Bottle Share</h1>
+  <p>Some meaningless impact phrase.</p>
+</div>
+
+<div class="row">
+  <div id="peer-list" class="column">
+    <h2>Peers</h2>
+  </div>
+
+  <div id="chat-log" class="column">
+    <h2>Chat log field</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas sit amet pretium urna. Vivamus venenatis velit nec neque ultricies, eget elementum magna tristique. Quisque vehicula, risus eget aliquam placerat, purus leo tincidunt eros, eget luctus quam orci in velit. Praesent scelerisque tortor sed accumsan convallis.</p>
+  </div>
+</div>
+
 <div>
   <strong>Earth:</strong> <input id="update-text" type="input" placeholder="enter update for Earth here"/>
   <input id="publish-button" type="submit" value="Submit Update to The Guide"/>
   <br>
-  <br>
-  <div id="peer-list">Peer List:</div>
-  <br>
-  <div id="messages-top">Updates</div>
 </div>
 </body>
 
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.27.4.min.js"></script>
-
-
 
 <!-- Doctors connects to endoscope channel to see which ones are available and it's state -->
 <script>
@@ -32,7 +97,7 @@
   var peers = [];
 
   const peerList = document.getElementById('peer-list');
-  const messagesTop = document.getElementById('messages-top');
+  const messagesTop = document.getElementById('chat-log');
   const updateText = document.getElementById('update-text');
   const sendButton = document.getElementById('publish-button');
   sendButton.addEventListener('click', () => {submitUpdate(theEntry, updateText.value)});
@@ -56,29 +121,26 @@
 
   pubnub.addListener({
     message: function(event) {
-      displayMessage('[MESSAGE: received]',
-        event.message.entry + ': ' + event.message.update);
+      displayMessage('[MESSAGE: received]', event.message.entry + ': ' + event.message.update);
     },
     presence: function(event) {
-      displayMessage('[PRESENCE: ' + event.action + ']',
-        'uuid: ' + event.uuid + ', channel: ' + event.channel + ', occupancy: ' + event.occupancy);
+      displayMessage('[PRESENCE: ' + event.action + ']', 'uuid: ' + event.uuid + ', channel: ' + event.channel + ', occupancy: ' + event.occupancy);
       pubnub.hereNow(
-  {
-    channels: [event.channel],
-    includeState: true
-  },
-  function (status, response) {
-    console.log(status, response);
-    var peerListField = document.getElementById('peer-list');
-    var peerText = "Peer List:<br />";
-    for (occupant of response.channels.endoscopes.occupants) {
-      console.log('Occupant: ' + occupant.uuid);
-      peerText = peerText + occupant.uuid + '<br />';
-    }
-    peerListField.innerHTML = peerText;
-
-  }
-);
+        {
+          channels: [event.channel],
+          includeState: true
+        },
+        function (status, response) {
+          console.log(status, response);
+          var peerListField = document.getElementById('peer-list');
+          var peerText = "<h2>Peers</h2><br>";
+          for (occupant of response.channels.endoscopes.occupants) {
+            console.log('Occupant: ' + occupant.uuid);
+            peerText = peerText + occupant.uuid + '<br />';
+          }
+          peerListField.innerHTML = peerText;
+        }
+      );
     },
     status: function(event) {
       displayMessage('[STATUS: ' + event.category + ']',
@@ -105,8 +167,7 @@
         console.log(status)
       }
       else {
-        displayMessage('[PUBLISH: sent]',
-          'timetoken: ' + response.timetoken);
+        displayMessage('[PUBLISH: sent]', 'timetoken: ' + response.timetoken);
 
         updateText.value="";
       }
