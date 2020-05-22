@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Doctor Page</title>
+</head>
+<style>
+.myDiv {
+  border: 5px outset red;
+  background-color: lightblue;    
+  text-align: center;
+}
+</style>
+<body>
+<div>
+  <strong>Earth:</strong> <input id="update-text" type="input" placeholder="enter update for Earth here"/>
+  <input id="publish-button" type="submit" value="Submit Update to The Guide"/>
+  <br>
+  <br>
+  <div id="peer-list">Peer List:</div>
+  <br>
+  <div id="messages-top">Updates</div>
+</div>
+</body>
+
+<script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.27.4.min.js"></script>
+
+
+
+<!-- Doctors connects to endoscope channel to see which ones are available and it's state -->
+<script>
+
+  var peers = [];
+
+  const peerList = document.getElementById('peer-list');
+  const messagesTop = document.getElementById('messages-top');
+  const updateText = document.getElementById('update-text');
+  const sendButton = document.getElementById('publish-button');
+  sendButton.addEventListener('click', () => {submitUpdate(theEntry, updateText.value)});
+
+  const clientUUID = PubNub.generateUUID();
+  const theChannel = 'endoscopes';
+  const theEntry = 'Earth';
+
+  var docn =  Math.floor(Math.random() * 101);
+  var doc = "bs_" + docn;
+  //do {
+  //  doc = prompt("Doc name", "doc" + docn); 
+  //} while(doc == null);
+
+  const pubnub = new PubNub({
+    // replace the following with your own publish and subscribe keys
+    publishKey: 'pub-c-b56ca726-1b42-4887-8fc0-c2416f9c84ce',
+    subscribeKey: 'sub-c-f20dd6fe-98eb-11ea-9123-e6a08f73ae22',
+    uuid: doc
+  });
+
+  pubnub.addListener({
+    message: function(event) {
+      displayMessage('[MESSAGE: received]',
+        event.message.entry + ': ' + event.message.update);
+    },
+    presence: function(event) {
+      displayMessage('[PRESENCE: ' + event.action + ']',
+        'uuid: ' + event.uuid + ', channel: ' + event.channel + ', occupancy: ' + event.occupancy);
+      pubnub.hereNow(
+  {
+    channels: [event.channel],
+    includeState: true
+  },
+  function (status, response) {
+    console.log(status, response);
+    var peerListField = document.getElementById('peer-list');
+    var peerText = "Peer List:<br />";
+    for (occupant of response.channels.endoscopes.occupants) {
+      console.log('Occupant: ' + occupant.uuid);
+      peerText = peerText + occupant.uuid + '<br />';
+    }
+    peerListField.innerHTML = peerText;
+
+  }
+);
+    },
+    status: function(event) {
+      displayMessage('[STATUS: ' + event.category + ']',
+        'connected to channels: ' + event.affectedChannels);
+
+      if (event.category == 'PNConnectedCategory') {
+        submitUpdate(theEntry, 'Harmless.');
+      }
+    }
+  });
+
+  pubnub.subscribe({
+    channels: [theChannel],
+    withPresence: true
+  });
+
+  submitUpdate = function(anEntry, anUpdate) {
+    pubnub.publish({
+      channel : theChannel,
+      message : {'entry' : anEntry, 'update' : anUpdate}
+    },
+    function(status, response) {
+      if (status.error) {
+        console.log(status)
+      }
+      else {
+        displayMessage('[PUBLISH: sent]',
+          'timetoken: ' + response.timetoken);
+
+        updateText.value="";
+      }
+    });
+  };
+
+  displayMessage = function(messageType, aMessage) {
+    let pmessage = document.createElement('p');
+    let br = document.createElement('br');
+
+    messagesTop.after(pmessage);
+    pmessage.appendChild(document.createTextNode(messageType));
+    pmessage.appendChild(br);
+    pmessage.appendChild(document.createTextNode(aMessage));
+  }
+
+</script>
+</html>
